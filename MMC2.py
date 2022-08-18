@@ -1,3 +1,4 @@
+from re import L
 import sys
 
 try:
@@ -16,7 +17,7 @@ class MMC2:
         self.X = 0
         self.Y = 0
         
-        self.__speed_limit = np.array([0, 0])
+        self.__speed_limit = np.array([1000, 20000, 1000])
         self.__P2MM = 0.002
 
     def __del__(self):
@@ -34,6 +35,13 @@ class MMC2:
     def set_P2MM(self, P2MM):
         self.__P2MM = P2MM
     
+    def set_speed_limit(self, sl = None):
+        if(sl is None):
+            self.set_speed_limit(self.__speed_limit)
+        else:
+            self.send("D:P" + str(sl[0]) + "P" + str(sl[1])+ "P" + str(sl[2]))
+            self.__speed_limit = sl
+
     def move(self, x, y = 0):
         self.X = self.X + self.__mm2pulse(x)
         self.Y = self.Y + self.__mm2pulse(y)
