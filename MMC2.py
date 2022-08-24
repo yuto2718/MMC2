@@ -1,5 +1,6 @@
 from re import L
 import sys
+import serial
 
 try:
     import pyvisa
@@ -10,10 +11,13 @@ except:
 import numpy as np
 
 class MMC2:
-    def __init__(self, visaResourceManager:pyvisa.ResourceManager) -> None:
-        self.rm = visaResourceManager
-        self.device_instance = None
-        
+    def __init__(self, visaResourceManager:pyvisa.ResourceManager, dev) -> None:
+        try :
+            self.device_instance = visaResourceManager.open_resource(dev)
+            self.rm = visaResourceManager
+            print("Open device : " + dev)
+        except:
+            print("Cannot open device : " + dev)
         self.X = 0
         self.Y = 0
         
@@ -22,7 +26,7 @@ class MMC2:
 
     def __del__(self):
         try:
-            self.inst.close()
+            self.device_instance.close()
         except:
             print("Cannot close device.")
 
@@ -48,7 +52,7 @@ class MMC2:
         self.abs_move(self.X, self.Y)
     
     def abs_move(self, x, y):
-        self.send("A:WP"+str(x)+"P"+str(y))
+        self.send("A:WP"+str(int(self.__mm2pulse(x)))+"P"+str(int(self.__mm2pulse(y))))
     
     def get_position(self):
         return self.__pulse2mm(self.X), self.__pulse2mm(self.Y)
@@ -60,31 +64,24 @@ class MMC2:
         self.X = 0.0
         self.Y = 0.0
         self.send("H:")
-        self.wait()
     
     def check_version(self) -> str:
         return self.query("?:")
     
     def wait(self):
-        self.query("W:")
+        self.send("W:")
     
     def send(self, command:str):
-        self.device_instance.write(command + "\r\n")
-        print(command)
+        print((command+"\n"))
+        self.device_instance.write((command+"\n"))
         
     def query(self, command:str) -> str:
-        print(command)
-        return self.device_instance.query(command + "\r\n")
-    
+        print((command+"\n"))
+        self.device_instance.write((command+"\n"))
+        
     def stop(self):
         self.send("L:W")
     
     def EMO(self):
         self.send("L:E")
-    
-    def connect(self, name:str):
-        try :
-            self.device_instance = self.self.rm.open_resource(name)
-            print("Open device : " + name)
-        except:
-            print("Cannot open device : " + name)
+
